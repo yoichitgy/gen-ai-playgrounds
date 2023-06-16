@@ -10,6 +10,7 @@ app = typer.Typer()
 EMBEDDINGS_NAME = "winter_olympics_2022.csv"
 DATAFRAME_NAME = "winter_olympics_2022.pkl"
 GPT_MODEL = "gpt-3.5-turbo"
+PINECONE_INDEX = "winter-olympics-2022"
 
 
 @app.command()
@@ -123,6 +124,54 @@ def ask(
     )
     response_message = response["choices"][0]["message"]["content"]
     print(response_message)
+
+
+@app.command()
+def create_pinecone_index():
+    import pinecone
+
+    init_pinecone()
+    pinecone.create_index(PINECONE_INDEX, dimension=1536, metric="cosine")
+
+
+@app.command()
+def upsert_pinecone():
+    import pinecone
+
+    init_pinecone()
+    index = pinecone.Index(PINECONE_INDEX)
+
+    df = read_dataframe()
+    for i, row in df.iterrows():
+        print(f"Upserting {i}...")
+        vector = (f"id_{i}", row["embedding"], {"text": row["text"]})
+        index.upsert([vector])
+
+
+def strings_queried_to_pinecone(
+    query: str, top_n: int = 100
+) -> tuple[list[str], list[float]]:
+    import pinecone
+
+    init_pinecone()
+    index = pinecone.Index(PINECONE_INDEX)
+    query_embedding = embedding_from_query(query)
+
+    resp = index.query(query_embedding, top_k=top_n, include_metadata=True)
+
+    strings_and_scores = [(match["metadata"]["text"], match["score"]) for match in resp["matches"]]
+    strings, scores = zip(*strings_and_scores)
+    return strings, scores
+
+
+def init_pinecone():
+    import os
+
+    import pinecone
+
+    PINECONE_API_KEY = os.environ["PINECONE_API_KEY"]
+    PINECONE_ENVIRONMENT = os.environ["PINECONE_ENVIRONMENT"]
+    pinecone.init(api_key=PINECONE_API_KEY, environment=PINECONE_ENVIRONMENT)
 
 
 if __name__ == "__main__":
