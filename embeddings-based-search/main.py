@@ -86,8 +86,11 @@ def num_tokens(text: str, model: str) -> int:
     return len(encoding.encode(text))
 
 
-def query_message(query: str, model: str, token_budget: int) -> str:
-    strings, _ = strings_ranked_by_relatedness(query)
+def query_message(query: str, model: str, token_budget: int, use_pinecone: bool) -> str:
+    if use_pinecone:
+        strings, _ = strings_queried_to_pinecone(query)
+    else:
+        strings, _ = strings_ranked_by_relatedness(query)
     introduction = 'Use the below articles on the 2022 Winter Olympics to answer the subsequent question. If the answer cannot be found in the articles, write "I could not find an answer."'
     question = f"\n\nQuestion: {query}"
     message = introduction
@@ -107,8 +110,9 @@ def ask(
     temperature: float = 0,
     token_budget: int = 4096 - 500,
     print_message: bool = False,
+    use_pinecone: bool = False,
 ):
-    message = query_message(query, model, token_budget)
+    message = query_message(query, model, token_budget, use_pinecone)
     if print_message:
         print(message)
 
