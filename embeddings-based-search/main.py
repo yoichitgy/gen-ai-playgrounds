@@ -14,6 +14,8 @@ GPT_MODEL = "gpt-3.5-turbo"
 
 @app.command()
 def prep_dataframe():
+    import os
+    
     embeddings_url = "https://cdn.openai.com/API/examples/data/" + EMBEDDINGS_NAME
 
     # Check the file exists
