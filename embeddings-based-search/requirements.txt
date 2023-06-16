@@ -4,6 +4,7 @@ isort
 mypy
 openai
 pandas
+pinecone-client
 tiktoken
 scipy
 typer
